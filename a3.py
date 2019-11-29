@@ -112,7 +112,7 @@ def problem_7_1_8(x):
     x0=0 #initial value of time, i.e. t=0
     y0 = array([0,0], dtype=float_)   #initial values
     h = 0.01 #suggested by professor
-    X, Y = runge_kutta_4(F_7_18,x0,y0,x,h) #here, x is the limit of the y variable (see runge kutta implementation code)
+    X, Y = runge_kutta_4_modified(F_7_18,x0,y0,x,h) #here, x is the limit of the y variable (see runge kutta implementation code)
     return X[-1]  #returns last element of X (not Y!)
 
     raise Exception("Not implemented")
@@ -130,6 +130,14 @@ def problem_7_1_11(x):
     '''
 
    ## YOUR CODE HERE
+    def F(x,y):
+        return array([ sin(x*y) ], dtype=float_)
+
+    x0=0 #we will plot solutions in the range 0 to 10
+    y0=array([2.0],dtype=float_)
+    h = 0.01
+    Y = runge_kutta_4(F,x0,y0,x,h)
+    return Y[-1,0]
     raise Exception("Not implemented")
 
 '''
@@ -162,7 +170,7 @@ def problem_8_2_18(a, r0):
     Utilities for Initial Value Problems
 '''
 #From course notes, slightly modified
-def runge_kutta_4(F, x0, y0, x, h):
+def runge_kutta_4_modified(F, x0, y0, x, h):
     '''
    Return y(x) given the following initial value problem:
    y' = F(x, y)
@@ -186,6 +194,30 @@ def runge_kutta_4(F, x0, y0, x, h):
         Y.append(y0)
     return array(X), array(Y)
 
+#From course notes
+def runge_kutta_4(F, x0, y0, x, h):
+    '''
+   Return y(x) given the following initial value problem:
+   y' = F(x, y)
+   y(x0) = y0 # initial conditions
+   h is the increment of x used in integration
+   F = [y'[0], y'[1], ..., y'[n-1]]
+   y = [y[0], y[1], ..., y[n-1]]
+   '''
+    #X = []
+    Y = []
+    #X.append(x0)
+    Y.append(y0)
+    while x0 < x:
+        k0 = F(x0, y0)
+        k1 = F(x0 + h / 2.0, y0 + h / 2.0 * k0)
+        k2 = F(x0 + h / 2.0, y0 + h / 2 * k1)
+        k3 = F(x0 + h, y0 + h * k2)
+        y0 = y0 + h / 6.0 * (k0 + 2 * k1 + 2.0 * k2 + k3)
+        x0 += h
+        #X.append(x0)
+        Y.append(y0)
+    return array(Y)
 
 '''
     Utilities for Interpolation and Curve Fitting
