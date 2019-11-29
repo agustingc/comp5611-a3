@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from numpy import array, arange, zeros,float_,sum,prod,shape,diagonal,dot,argmax,sin
+from numpy import array, arange, zeros,float_,sum,prod,shape,diagonal,dot,argmax,sin,sign
 
 '''
 NOTE: You are not allowed to import any function from numpy's linear 
@@ -136,7 +136,7 @@ def problem_7_1_11(x):
     x0=0 #we will plot solutions in the range 0 to 10
     y0=array([2.0],dtype=float_)
     h = 0.01
-    Y = runge_kutta_4(F,x0,y0,x,h)
+    _ , Y = runge_kutta_4(F,x0,y0,x,h)
     return Y[-1,0]
     raise Exception("Not implemented")
 
@@ -164,10 +164,25 @@ def problem_8_2_18(a, r0):
     '''
 
     ## YOUR CODE HERE
+    def F_8_2_18(x,y):
+        return array([
+                        y[1],
+                        -1/x*y[1]
+                    ])
+    #values of a,b
+    xStart = a/2
+    xEnd = a
+    xStop = r0
+    #values of y(a) and y(b)
+    u0= 400/a
+    u1= u0*2
+    #Step size
+    X,Y = shooting_o2(F_8_2_18,xStart,0,xEnd,200,u0,u1,xStop)
+    return Y[-1,0]
     raise Exception("Not implemented")
 
 '''
-    Utilities for Initial Value Problems
+    Utilities for Initial Value Problems and Two-Point Boundary Problems
 '''
 #From course notes, slightly modified
 def runge_kutta_4_modified(F, x0, y0, x, h):
@@ -204,9 +219,9 @@ def runge_kutta_4(F, x0, y0, x, h):
    F = [y'[0], y'[1], ..., y'[n-1]]
    y = [y[0], y[1], ..., y[n-1]]
    '''
-    #X = []
+    X = []
     Y = []
-    #X.append(x0)
+    X.append(x0)
     Y.append(y0)
     while x0 < x:
         k0 = F(x0, y0)
@@ -215,9 +230,65 @@ def runge_kutta_4(F, x0, y0, x, h):
         k3 = F(x0 + h, y0 + h * k2)
         y0 = y0 + h / 6.0 * (k0 + 2 * k1 + 2.0 * k2 + k3)
         x0 += h
-        #X.append(x0)
+        X.append(x0)
         Y.append(y0)
-    return array(Y)
+    return array(X), array(Y)
+
+#From course notes, slightly modified
+def false_position(f, a, b, delta_x):
+    '''
+    f is the function for which we will find a zero
+    a and b define the bracket
+    delta_x is the desired accuracy
+    Returns ci such that |ci-c_{i-1}| < delta_x
+    '''
+    fa = f(a)
+    fb = f(b)
+    if sign(fa) == sign(fb):
+        raise Exception("Root hasn't been bracketed")
+    estimates = []
+    while True:
+        c = (a*fb-b*fa)/(fb-fa)
+        estimates.append(c)
+        fc = f(c)
+        if sign(fc) == sign(fa):
+            a = c
+            fa = fc
+        else:
+            b = c
+            fb = fc
+        if len(estimates) >=2 and abs(estimates[-1] - estimates[-2]) <= delta_x:
+            break
+    return c, estimates
+
+#From course notes, slightly modified
+def shooting_o2(F, a, alpha, b, beta, u0, u1, xStop,delta=10E-3):
+    '''
+    Solve the boundary condition problem defined by:
+    y' = F(x, y)
+    y(a) = alpha
+    y(b) = beta
+    u0 and u1 define a bracket for y'(a)
+    delta is the desired accuracy on y'(a)
+    Assumes problem is of order 2 (F has two coordinates, alpha and beta are scalars)
+    '''
+
+    def r(u):
+        '''
+        Boundary residual, as in equation (1)
+        '''
+        # Estimate theta_u
+        # Evaluate y and y' until x=b, using initial condition y(a)=alpha and y'(a)=u
+        X, Y = runge_kutta_4(F, a, array([alpha, u]), b, 0.2)
+        theta_u = Y[-1, 0]  # last row, first column (y)
+        return theta_u - beta
+
+    # Find u as a the zero of r
+    u, _ = false_position(r, u0, u1, delta)
+
+    # Now use u to solve the initial value problem one more time
+    X, Y = runge_kutta_4(F, a, array([alpha, u]), xStop, 0.2)       #line modified
+    return X, Y
 
 '''
     Utilities for Interpolation and Curve Fitting
